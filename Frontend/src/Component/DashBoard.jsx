@@ -65,7 +65,8 @@ const Dashboard = () => {
         const data = {
             checkInTime: checkInTime,
             checkOutTime: 'Pending',
-            name : localStorage.getItem('name')
+            name : localStorage.getItem('name'),
+            email : localStorage.getItem('email')
         };
 
         try {
@@ -111,13 +112,18 @@ const Dashboard = () => {
     };
 
     const fetchData = async () => {
+        const email = localStorage.getItem('email'); // Get email from localStorage
         const querySnapshot = await getDocs(collection(db, "timetracker"));
-        const fetchedData = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-        }));
+        
+        const fetchedData = querySnapshot.docs
+            .map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+            }))
+            .filter(item => item.email === email); // Filter by email
+        
         setData(fetchedData);
-
+    
         // Check if there's any pending checkout
         const pending = fetchedData.find(item => item.checkOutTime === 'Pending');
         if (pending) {
@@ -126,6 +132,7 @@ const Dashboard = () => {
             setPendingCheckOutId(null);
         }
     };
+    
 
 
     const timeCalculator = (checkInTime, checkOutTime) => {
