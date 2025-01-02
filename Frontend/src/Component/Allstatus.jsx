@@ -22,7 +22,8 @@ import {
     DrawerOverlay,
     DrawerContent,
     useDisclosure,
-    useToast
+    useToast,
+    Input
 } from "@chakra-ui/react";
 import { HamburgerIcon, CloseIcon } from "@chakra-ui/icons";
 import img from "../assets/logo.png";
@@ -30,14 +31,13 @@ import { doc, setDoc, getDocs, collection, updateDoc } from "firebase/firestore"
 import { db } from "../Firebase/firebase";
 import { useNavigate } from "react-router-dom";
 
-const Dashboard = () => {
+const AllStatus = () => {
     const navigate = useNavigate()
     const toast = useToast();
-    const [userName] = useState("John Doe");
     const { isOpen, onOpen, onClose } = useDisclosure();
     const isMobile = useBreakpointValue({ base: true, lg: false });
     const [data, setData] = useState([]);
-    const [pendingCheckOutId, setPendingCheckOutId] = useState(null);
+    const [date, setDate] = useState('')
 
     useEffect(() => {
         const islogged = localStorage.getItem('isloggedin');
@@ -45,72 +45,6 @@ const Dashboard = () => {
             navigate('/')
         }
     }, [])
-
-    const generateRandomString = (length = 16) => {
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let result = '';
-        for (let i = 0; i < length; i++) {
-            const randomIndex = Math.floor(Math.random() * characters.length);
-            result += characters[randomIndex];
-        }
-        return result;
-    };
-
-    const handleCheckIn = async () => {
-        const currentTime = new Date();
-        const hours = currentTime.getHours().toString().padStart(2, '0');
-        const minutes = currentTime.getMinutes().toString().padStart(2, '0');
-        const checkInTime = `${hours}:${minutes}`;
-
-        const data = {
-            checkInTime: checkInTime,
-            checkOutTime: 'Pending',
-            name: localStorage.getItem('name'),
-            email: localStorage.getItem('email'),
-            date: `${((new Date()).getDate())}/${((new Date()).getMonth() + 1)}/${((new Date()).getFullYear())}`
-        };
-
-        try {
-            const docRef = doc(db, "timetracker", generateRandomString());
-            await setDoc(docRef, data);
-            console.log("Check-in recorded successfully");
-            fetchData();  // Refresh data after check-in
-            toast({
-                title: "CheckIn Successful!",
-                description: ``,
-                status: "success",
-                duration: 3000,
-                isClosable: true,
-                position: "top-right"
-            });
-        } catch (error) {
-            console.error("Error recording check-in: ", error);
-        }
-    };
-
-    const handleCheckOut = async (id) => {
-        const currentTime = new Date();
-        const hours = currentTime.getHours().toString().padStart(2, '0');
-        const minutes = currentTime.getMinutes().toString().padStart(2, '0');
-        const checkOutTime = `${hours}:${minutes}`;
-
-        const docRef = doc(db, "timetracker", id);
-        try {
-            await updateDoc(docRef, { checkOutTime: checkOutTime });
-            console.log("Check-out recorded successfully");
-            fetchData();  // Refresh data after check-out
-            toast({
-                title: "CheckOut Successful!",
-                description: ``,
-                status: "success",
-                duration: 3000,
-                isClosable: true,
-                position: "top-right"
-            });
-        } catch (error) {
-            console.error("Error recording check-out: ", error);
-        }
-    };
 
     const fetchData = async () => {
         const email = localStorage.getItem('email'); // Get email from localStorage
@@ -120,18 +54,9 @@ const Dashboard = () => {
             .map(doc => ({
                 id: doc.id,
                 ...doc.data(),
-            }))
-            .filter(item => item.email === email); // Filter by email
+            }));
 
         setData(fetchedData);
-
-        // Check if there's any pending checkout
-        const pending = fetchedData.find(item => item.checkOutTime === 'Pending');
-        if (pending) {
-            setPendingCheckOutId(pending.id);
-        } else {
-            setPendingCheckOutId(null);
-        }
     };
 
 
@@ -167,6 +92,11 @@ const Dashboard = () => {
         return `${hoursWorked} hours ${minutesWorked} mins`;
     };
 
+    const filterByDate = data.filter((item) => {
+        return (item.date).includes(date)
+        // return (item.date).includes(date)
+    })
+
     const hondleLogOut = () => {
         localStorage.removeItem('isloggedin');
         navigate('/')
@@ -197,8 +127,8 @@ const Dashboard = () => {
                         </DrawerHeader>
                         <DrawerBody>
                             <VStack spacing={4} align="stretch">
-                                <Button colorScheme="green" mt={4} onClick={() => navigate('/dashboard/all')} >
-                                    See All
+                                <Button colorScheme="green" mt={4} onClick={() => navigate('/dashboard')} >
+                                    Dashboard
                                 </Button>
                                 <Button colorScheme="red" mt={4} onClick={hondleLogOut}>
                                     Logout
@@ -223,8 +153,8 @@ const Dashboard = () => {
                         <Image src={img} />
                     </Box>
                     <VStack width={'full'} justifyContent={'center'} alignItems={'stretch'}>
-                        <Button colorScheme="green" mt={4} onClick={() => navigate('/dashboard/all')} >
-                            See All
+                        <Button colorScheme="green" mt={4} onClick={() => navigate('/dashboard')} >
+                            Dashboard
                         </Button>
                         <Button colorScheme="red" mt={4} onClick={hondleLogOut}>
                             Logout
@@ -260,7 +190,7 @@ const Dashboard = () => {
                             size="sm"
                         />
                         <Text fontWeight="bold" fontSize="lg">
-                            Dashboard
+                            AllStatus
                         </Text>
                     </Flex>
                 )}
@@ -299,27 +229,7 @@ const Dashboard = () => {
                         flexWrap="wrap"
                         justifyContent={{ base: "center", md: "flex-end" }}
                     >
-                        {pendingCheckOutId ? (
-                            <Button
-                                color={'white'}
-                                width={{ base: "full", md: "200px" }}
-                                backgroundColor="red.600"
-                                _hover={{ backgroundColor: 'red.700' }}
-                                onClick={() => handleCheckOut(pendingCheckOutId)}
-                            >
-                                Check Out
-                            </Button>
-                        ) : (
-                            <Button
-                                color={'white'}
-                                width={{ base: "full", md: "200px" }}
-                                backgroundColor="green.600"
-                                _hover={{ backgroundColor: 'green.700' }}
-                                onClick={handleCheckIn}
-                            >
-                                Check In
-                            </Button>
-                        )}
+                        <Input type="text" backgroundColor={'gray.200'} placeholder="e.g : 2/1/2025" width={'300px'} onChange={(e) => setDate(e.target.value)}></Input>
                     </HStack>
                 </HStack>
 
@@ -336,7 +246,7 @@ const Dashboard = () => {
                             </Tr>
                         </Thead>
                         <Tbody>
-                            {data.map((item) => (
+                            {filterByDate.map((item) => (
                                 <Tr key={item.id}>
                                     <Td fontWeight={'600'} textTransform={'capitalize'}>{item.name}</Td>
                                     <Td>{item.date}</Td>
@@ -353,4 +263,4 @@ const Dashboard = () => {
     );
 };
 
-export default Dashboard;
+export default AllStatus;
